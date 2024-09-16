@@ -31,10 +31,10 @@ function Placeholder({ filesDoNotExist }: { filesDoNotExist: boolean }) {
 
 export default function FileBrowser({
   title,
-  favorites,
+  favoritesOnly,
 }: {
   title: string;
-  favorites?: boolean;
+  favoritesOnly?: boolean;
 }) {
   const organization = useOrganization();
   const user = useUser();
@@ -46,13 +46,18 @@ export default function FileBrowser({
     orgId = organization.organization?.id ?? user.user?.id;
   }
 
+  const favorites = useQuery(
+    api.files.getAllFavorites,
+    orgId ? { orgId } : "skip"
+  );
+
   const files = useQuery(
     api.files.getFiles,
     orgId
       ? {
           orgId,
           query,
-          favorites
+          favorites: favoritesOnly,
         }
       : "skip"
   );
@@ -81,7 +86,7 @@ export default function FileBrowser({
 
           <div className="grid grid-cols-4 gap-4">
             {files?.map((file) => {
-              return <FileCard key={file._id} file={file} />;
+              return <FileCard favorites={favorites ?? []} key={file._id} file={file} />;
             })}
           </div>
         </>

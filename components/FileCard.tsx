@@ -20,6 +20,7 @@ import {
   GanttChartIcon,
   ImageIcon,
   MoreVertical,
+  StarHalf,
   StarIcon,
   TrashIcon,
 } from "lucide-react";
@@ -39,8 +40,15 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import { FaStar } from "react-icons/fa";
 
-const FileCardActions = ({ file }: { file: Doc<"files"> }) => {
+const FileCardActions = ({
+  file,
+  isFavorited,
+}: {
+  file: Doc<"files">;
+  isFavorited: boolean;
+}) => {
   const deleteFile = useMutation(api.files.deleteFile);
   const toggleFavorite = useMutation(api.files.toggleFavorite);
   const { toast } = useToast();
@@ -91,8 +99,17 @@ const FileCardActions = ({ file }: { file: Doc<"files"> }) => {
             }}
             className="flex gap-1 items-center cursor-pointer"
           >
-            <StarIcon className="size-4" />
-            Favorite
+            {isFavorited ? (
+              <>
+                <FaStar className="size-4" />
+                <small className="font-semibold text-sm">Favorited</small>
+              </>
+            ) : (
+              <>
+                <StarIcon className="size-4" />
+                <small className="text-sm">Favorite</small>
+              </>
+            )}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -110,14 +127,20 @@ const FileCardActions = ({ file }: { file: Doc<"files"> }) => {
 
 export const FileCard = ({
   file,
+  favorites,
 }: {
   file: Doc<"files"> & { url: string | null };
+  favorites: Doc<"favorites">[];
 }) => {
   const typeIcons = {
     image: <ImageIcon />,
     pdf: <FileTextIcon />,
     csv: <GanttChartIcon />,
   } as Record<Doc<"files">["type"], ReactNode>;
+
+  const isFavorited = favorites.some(
+    (favorite) => favorite.fileId === file._id
+  );
 
   return (
     <Card>
@@ -127,7 +150,7 @@ export const FileCard = ({
           {file.name}
         </CardTitle>
         <div className="absolute top-2 right-2">
-          <FileCardActions file={file} />
+          <FileCardActions isFavorited={isFavorited} file={file} />
         </div>
       </CardHeader>
       <CardContent className="h-[200px] flex justify-center items-center">
