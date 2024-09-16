@@ -12,6 +12,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -19,6 +20,7 @@ import {
   GanttChartIcon,
   ImageIcon,
   MoreVertical,
+  StarIcon,
   TrashIcon,
 } from "lucide-react";
 
@@ -40,6 +42,7 @@ import Image from "next/image";
 
 const FileCardActions = ({ file }: { file: Doc<"files"> }) => {
   const deleteFile = useMutation(api.files.deleteFile);
+  const toggleFavorite = useMutation(api.files.toggleFavorite);
   const { toast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -81,6 +84,18 @@ const FileCardActions = ({ file }: { file: Doc<"files"> }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
+            onClick={() => {
+              toggleFavorite({
+                fileId: file._id,
+              });
+            }}
+            className="flex gap-1 items-center cursor-pointer"
+          >
+            <StarIcon className="size-4" />
+            Favorite
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
             onClick={() => setIsConfirmOpen(true)}
             className="flex gap-1 text-red-600 items-center cursor-pointer"
           >
@@ -120,8 +135,22 @@ export const FileCard = ({
           <Image src={file.url} alt={file.name} width={200} height={100} />
         )}
 
-        {file.type === "csv" && <GanttChartIcon className="size-20" />}
-        {file.type === "pdf" && <FileTextIcon className="size-20" />}
+        {file.type === "csv" && (
+          <Image
+            src="/csv.png"
+            width={80}
+            height={80}
+            alt="CSV File Type Image"
+          />
+        )}
+        {file.type === "pdf" && (
+          <Image
+            src="/pdf.png"
+            width={160}
+            height={160}
+            alt="PDF File Type Image"
+          />
+        )}
       </CardContent>
       <CardFooter className="flex justify-center">
         <Button

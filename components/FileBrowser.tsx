@@ -7,10 +7,38 @@ import { UploadButton } from "@/components/UploadButton";
 import { FileCard } from "@/components/FileCard";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
+import { SearchBar } from "@/components/SearchBar";
+import { useState } from "react";
 
-export default function Home() {
+function Placeholder({ filesDoNotExist }: { filesDoNotExist: boolean }) {
+  return (
+    <div className="flex flex-col gap-8 items-center mt-24">
+      <Image
+        src="/empty.svg"
+        width={400}
+        height={400}
+        alt="An image of a picture and directory icon"
+      />
+      <p className="text-2xl">
+        {filesDoNotExist
+          ? "You have no files yet. Click below to upload your first file."
+          : "No files match your search."}
+      </p>
+      {filesDoNotExist && <UploadButton />}
+    </div>
+  );
+}
+
+export default function FileBrowser({
+  title,
+  favorites,
+}: {
+  title: string;
+  favorites?: boolean;
+}) {
   const organization = useOrganization();
   const user = useUser();
+  const [query, setQuery] = useState("");
 
   let orgId: string | undefined = undefined;
 
@@ -18,11 +46,20 @@ export default function Home() {
     orgId = organization.organization?.id ?? user.user?.id;
   }
 
-  const files = useQuery(api.files.getFiles, orgId ? { orgId } : "skip");
+  const files = useQuery(
+    api.files.getFiles,
+    orgId
+      ? {
+          orgId,
+          query,
+          favorites
+        }
+      : "skip"
+  );
   const isLoading = files === undefined;
 
   return (
-    <main className="container mx-auto pt-12">
+    <div>
       {isLoading && (
         <div className="flex flex-col gap-4 items-center mt-24">
           <Loader2 className="size-32 animate-spin text-gray-700" />
@@ -30,28 +67,17 @@ export default function Home() {
         </div>
       )}
 
-      {!isLoading && files.length === 0 && (
-        <div className="flex flex-col gap-8 items-center mt-24">
-          <Image
-            src="/empty.svg"
-            width={400}
-            height={400}
-            alt="An image of a picture and directory icon"
-          />
-          <p className="text-2xl">
-            You have no files yet. Click below to upload your first file.
-          </p>
-          <UploadButton />
-        </div>
-      )}
-
-      {!isLoading && files.length > 0 && (
+      {!isLoading && (
         <>
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-4xl font-bold">Your Files</h1>
+            <h1 className="text-4xl font-bold">{title}</h1>
+
+            <SearchBar query={query} setQuery={setQuery} />
 
             <UploadButton />
           </div>
+
+          {files.length === 0 && <Placeholder filesDoNotExist={false} />}
 
           <div className="grid grid-cols-4 gap-4">
             {files?.map((file) => {
@@ -60,6 +86,6 @@ export default function Home() {
           </div>
         </>
       )}
-    </main>
+    </div>
   );
 }
