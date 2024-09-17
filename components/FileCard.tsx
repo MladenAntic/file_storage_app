@@ -20,7 +20,6 @@ import {
   GanttChartIcon,
   ImageIcon,
   MoreVertical,
-  StarHalf,
   StarIcon,
   TrashIcon,
 } from "lucide-react";
@@ -41,6 +40,7 @@ import { api } from "@/convex/_generated/api";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { FaStar } from "react-icons/fa";
+import { Protect } from "@clerk/nextjs";
 
 const FileCardActions = ({
   file,
@@ -111,14 +111,16 @@ const FileCardActions = ({
               </>
             )}
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => setIsConfirmOpen(true)}
-            className="flex gap-1 text-red-600 items-center cursor-pointer"
-          >
-            <TrashIcon className="size-4" />
-            Delete
-          </DropdownMenuItem>
+          <Protect role="org:admin" fallback={<></>}>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setIsConfirmOpen(true)}
+              className="flex gap-1 text-red-600 items-center cursor-pointer"
+            >
+              <TrashIcon className="size-4" />
+              Delete
+            </DropdownMenuItem>
+          </Protect>
         </DropdownMenuContent>
       </DropdownMenu>
     </>
