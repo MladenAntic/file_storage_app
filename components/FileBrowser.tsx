@@ -32,9 +32,11 @@ function Placeholder({ filesDoNotExist }: { filesDoNotExist: boolean }) {
 export default function FileBrowser({
   title,
   favoritesOnly,
+  deletedOnly,
 }: {
   title: string;
   favoritesOnly?: boolean;
+  deletedOnly?: boolean;
 }) {
   const organization = useOrganization();
   const user = useUser();
@@ -58,9 +60,11 @@ export default function FileBrowser({
           orgId,
           query,
           favorites: favoritesOnly,
+          deletedOnly,
         }
       : "skip"
   );
+
   const isLoading = files === undefined;
 
   return (
@@ -86,7 +90,13 @@ export default function FileBrowser({
 
           <div className="grid grid-cols-4 gap-4">
             {files?.map((file) => {
-              return <FileCard favorites={favorites ?? []} key={file._id} file={file} />;
+              return (
+                <FileCard
+                  favorites={favorites ?? []}
+                  key={file._id}
+                  file={file}
+                />
+              );
             })}
           </div>
         </>

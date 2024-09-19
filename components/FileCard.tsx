@@ -6,7 +6,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Doc } from "@/convex/_generated/dataModel";
-import { Button } from "./ui/button";
 
 import {
   DropdownMenu,
@@ -16,12 +15,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  FileIcon,
   FileTextIcon,
   GanttChartIcon,
   ImageIcon,
   MoreVertical,
   StarIcon,
   TrashIcon,
+  UndoIcon,
 } from "lucide-react";
 
 import {
@@ -35,12 +36,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ReactNode, useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { FaStar } from "react-icons/fa";
 import { Protect } from "@clerk/nextjs";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+import { formatRelative } from "date-fns";
 
 const FileCardActions = ({
   file,
@@ -50,6 +55,7 @@ const FileCardActions = ({
   isFavorited: boolean;
 }) => {
   const deleteFile = useMutation(api.files.deleteFile);
+  const restoreFile = useMutation(api.files.restoreFile);
   const toggleFavorite = useMutation(api.files.toggleFavorite);
   const { toast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -61,8 +67,8 @@ const FileCardActions = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your
-              account and remove your data from our servers.
+              This action will mark the file for deletion. Files marked for
+              deletion will be permanently deleted after 30 days.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -75,8 +81,9 @@ const FileCardActions = ({
 
                 toast({
                   variant: "default",
-                  title: "File deleted successfully",
-                  description: "Your file has been permanently deleted.",
+                  title: "File marked for deletion",
+                  description:
+                    "Your file has been marked for deletion and will be deleted soon.",
                 });
               }}
             >
@@ -107,18 +114,45 @@ const FileCardActions = ({
             ) : (
               <>
                 <StarIcon className="size-4" />
-                <small className="text-sm">Favorite</small>
+                <small className="text-sm">Mark as Favorite</small>
               </>
             )}
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => {
+              if (!file.url) return;
+              window.open(file.url, "_blank");
+            }}
+            className="flex gap-1 items-center cursor-pointer"
+          >
+            <FileIcon className="size-4" /> Download
           </DropdownMenuItem>
           <Protect role="org:admin" fallback={<></>}>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => setIsConfirmOpen(true)}
-              className="flex gap-1 text-red-600 items-center cursor-pointer"
+              onClick={() => {
+                if (file.shouldDelete) {
+                  restoreFile({
+                    fileId: file._id,
+                  });
+                } else {
+                  setIsConfirmOpen(true);
+                }
+              }}
+              className="flex gap-1 items-center cursor-pointer"
             >
-              <TrashIcon className="size-4" />
-              Delete
+              {file.shouldDelete ? (
+                <div className="flex gap-1 text-green-600 items-center cursor-pointer">
+                  <UndoIcon className="size-4" />
+                  Restore
+                </div>
+              ) : (
+                <div className="flex gap-1 text-red-600 items-center cursor-pointer">
+                  <TrashIcon className="size-4" />
+                  Delete
+                </div>
+              )}
             </DropdownMenuItem>
           </Protect>
         </DropdownMenuContent>
@@ -134,6 +168,10 @@ export const FileCard = ({
   file: Doc<"files"> & { url: string | null };
   favorites: Doc<"favorites">[];
 }) => {
+  const userProfile = useQuery(api.users.getUserProfile, {
+    userId: file.userId,
+  });
+
   const typeIcons = {
     image: <ImageIcon />,
     pdf: <FileTextIcon />,
@@ -147,7 +185,7 @@ export const FileCard = ({
   return (
     <Card>
       <CardHeader className="relative">
-        <CardTitle className="flex gap-2">
+        <CardTitle className="flex gap-2 text-base font-normal">
           <div className="flex justify-center">{typeIcons[file.type]}</div>
           {file.name}
         </CardTitle>
@@ -177,17 +215,23 @@ export const FileCard = ({
           />
         )}
       </CardContent>
-      <CardFooter className="flex justify-center">
-        <Button
-          onClick={() => {
-            // Open a new file to the file location on Convex
-            if (file.url) {
-              window.open(file.url, "_blank");
-            }
-          }}
-        >
-          Download
-        </Button>
+      <CardFooter className="flex justify-between">
+        <div className="flex gap-2 text-sm text-gray-700 w-20 items-center">
+          <Avatar className="size-6">
+            <AvatarImage src={userProfile?.image} />
+            <AvatarFallback>
+              {userProfile?.name
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </AvatarFallback>
+          </Avatar>
+          {userProfile?.name}
+        </div>
+
+        <div className="text-sm text-gray-700">
+        {formatRelative(new Date(file._creationTime), new Date())}
+        </div>
       </CardFooter>
     </Card>
   );
