@@ -24,7 +24,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Protect } from "@clerk/nextjs";
 import { FaStar } from "react-icons/fa";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Doc } from "@/convex/_generated/dataModel";
@@ -42,6 +42,7 @@ export const FileCardActions = ({
   const toggleFavorite = useMutation(api.files.toggleFavorite);
   const { toast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const me = useQuery(api.users.getMe);
 
   return (
     <>
@@ -111,7 +112,16 @@ export const FileCardActions = ({
           >
             <FileIcon className="size-4" /> Download
           </DropdownMenuItem>
-          <Protect role="org:admin" fallback={<></>}>
+          <Protect
+            condition={(check) => {
+              return (
+                check({
+                  role: "org:admin",
+                }) || file.userId === me?._id
+              );
+            }}
+            fallback={<></>}
+          >
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
